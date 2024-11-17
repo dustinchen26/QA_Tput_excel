@@ -26,16 +26,19 @@
             height: 200px;
             margin-bottom: 10px;
         }
+
         canvas {
             margin-bottom: 20px;
             width: 100% !important;  /* 保持寬度自適應 */
             height: 500px !important; /* 調整畫布高度為500px */
         }
+
         #chartsContainer {
             width: 80%;
             max-width: 1500px; /* 可以適當調整容器的最大寬度 */
             margin: 0 auto;
         }
+
         button {
             padding: 10px 20px;
             background-color: #4CAF50;
@@ -43,9 +46,27 @@
             border: none;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
+        table {
+            width: 60%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
     </style>
 </head>
 <body>
@@ -61,6 +82,9 @@
     <button onclick="generateExcel()">Generate Excel</button>
 
     <div id="chartsContainer"></div>
+
+    <!-- 表格顯示區域 -->
+    <div id="tableContainer"></div>
 
     <script>
         function parseLog(log) {
@@ -164,8 +188,8 @@
                 return;
             }
 
-            // 清空原有圖表
-            document.getElementById('chartsContainer').innerHTML = '';
+            // 顯示數據表格
+            displayTable(parsedData);
 
             // 用來保存 Excel 的數據
             const excelData = [];
@@ -186,6 +210,33 @@
 
             // 下載 Excel 文件
             XLSX.writeFile(wb, "iperf_report.xlsx");
+        }
+
+        function displayTable(parsedData) {
+            // 清空舊的表格
+            const tableContainer = document.getElementById('tableContainer');
+            tableContainer.innerHTML = '';
+
+            // 創建表格
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th>Time</th><th>UDP Port</th><th>Interval (sec)</th><th>Throughput (Mbits/sec)</th>';
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // 創建表格的 tbody
+            const tbody = document.createElement('tbody');
+            parsedData.forEach(serverData => {
+                serverData.serverData.forEach(entry => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${entry.time}</td><td>UDP port ${entry.serverPort}</td><td>${entry.interval}</td><td>${entry.tput}</td>`;
+                    tbody.appendChild(row);
+                });
+            });
+
+            table.appendChild(tbody);
+            tableContainer.appendChild(table);
         }
     </script>
 
