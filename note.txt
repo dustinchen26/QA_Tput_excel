@@ -1,0 +1,225 @@
+解析有誤，改成輸出4個column
+
+第1個column是時間，讀到輸入的格式如
+****************************** 2024/11/15 下午 02:05:01 *****************************************
+請將第一個column填上時間2024/11/15 下午 02:05:01 
+
+第2個column是例如UDP port 16732，
+第3個column是時間區段例如0.00-1.00 sec
+第4個column是throughput例如31.5 Mbits/sec
+
+<!-- 
+  Copyright © [2023] [Dustin_Chen]. All rights reserved.
+  Author: Dustin_Chen
+  Email:  Dustin_Chen@compal.com or chuhpsdustin@gmail.com
+-->
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA_Tput</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            line-height: 1.2;
+            font-size: 14px;
+            font-family: Roboto, sans-serif;
+            white-space: nowrap; /* Prevent automatic line breaks */
+            overflow-x: auto; /* Enable horizontal scrollbar */
+        }
+		
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+        canvas {
+            margin-bottom: 20px;
+            width: 100% !important;  /* 保持寬度自適應 */
+            height: 500px !important; /* 調整畫布高度為500px */
+        }
+        #chartsContainer {
+            width: 80%;
+            max-width: 1500px; /* 可以適當調整容器的最大寬度 */
+            margin: 0 auto;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>QA_Tput</h2>
+    <p style="margin: 0;">Author: Dustin_Chen, email: <a href="mailto:Dustin_Chen@compal.com"
+            style="line-height: 1;">Dustin_Chen@compal.com</a> or <a href="mailto:chuhpsdustin@gmail.com"
+            style="line-height: 1;">chuhpsdustin@gmail.com</a></p>
+		
+    <p>● Please paste the 5-great Report ex:"20241116-224559_B_UE1_temp.log" including iperf data and push draw</p>
+    
+    <textarea id="logInput"></textarea><br>
+    <button onclick="generateChart()">draw</button>
+
+    <div id="chartsContainer"></div>
+
+    <script>
+        function parseLog(log) {
+            const regex = /\[\s*\d+\]\s+([\d\.]+\-\s*[\d\.]+\s+sec)\s+[\d\.]+\s+MBytes\s+([\d\.]+)\s+Mbits\/sec/;
+            const data = [];
+            const lines = log.split('\n');
+            let currentServerData = [];
+            let seenIntervals = new Set();  // 用來記錄當前伺服器處理的時間區間
+            let currentServerPort = null; // 用來保存伺服器端口號
+            let parsingData = false; // 標誌變量，判斷是否開始解析數據
+
+            console.log('開始解析日誌數據...');
+            lines.forEach((line, index) => {
+                console.log(`處理第 ${index + 1} 行: ${line}`);
+
+                // 檢查行是否包含「Client connecting to」，如果包含則跳過整段日誌
+                if (line.includes('Client connecting to')) {
+                    console.log('發現 "Client connecting to"，跳過此段日誌');
+                    parsingData = false; // 停止解析
+                    return;
+                }
+
+                // 當遇到新的伺服器行
+                if (line.includes('Server listening on UDP port')) {
+                    // 如果當前伺服器已有數據，保存並開始處理新伺服器
+                    if (currentServerData.length > 0) {
+                        console.log(`保存伺服器數據，端口: ${currentServerPort}`);
+                        data.push({serverPort: currentServerPort, serverData: currentServerData});  // 保存當前伺服器的數據
+                    }
+                    currentServerData = [];  // 清空當前伺服器的數據
+                    seenIntervals = new Set();  // 重置每個伺服器的時間區間集合
+
+                    // 保存當前伺服器端口號
+                    const portMatch = line.match(/Server listening on UDP port (\d+)/);
+                    if (portMatch) {
+                        currentServerPort = portMatch[1]; // 保存端口號
+                        console.log(`發現伺服器開放在端口: ${currentServerPort}`);
+                    }
+                    parsingData = true; // 開始解析數據
+                    return; // 跳過這行
+                }
+
+                // 只有在解析數據標誌為真時才解析
+                if (parsingData) {
+                    // 匹配時間區間和吞吐量數據
+                    const match = line.match(regex);
+                    if (match) {
+                        const interval = match[1];  // 取得時間區間
+                        let tput = parseFloat(match[2]); // 取得吞吐量數據
+
+                        // 轉換單位為 Mbits/sec，這樣統一單位
+                        tput = tput; // 單位已經是 Mbits/sec，無需進行單位轉換
+
+                        // 不再跳過相同時間區間，對每個伺服器分開處理
+                        console.log('匹配成功:', match);
+                        seenIntervals.add(interval);  // 記錄這個時間區間
+                        currentServerData.push({
+                            interval: interval,
+                            tput: tput
+                        });
+                    } else {
+                        console.log('未匹配到正確的數據');
+                    }
+                }
+            });
+
+            // 保存最後一個伺服器的數據
+            if (currentServerData.length > 0) {
+                console.log(`保存最後一個伺服器的數據，端口: ${currentServerPort}`);
+                data.push({serverPort: currentServerPort, serverData: currentServerData});
+            }
+
+            console.log('解析完成，提取的數據:', data);
+            return data;
+        }
+
+        function generateChart() {
+            const log = document.getElementById('logInput').value.trim();
+            if (!log) {
+                alert('請輸入日誌數據');
+                return;
+            }
+
+            // 解析日誌數據
+            const parsedData = parseLog(log);
+
+            if (parsedData.length === 0) {
+                alert('未能解析出任何有效的數據');
+                return;
+            }
+
+            // 清空原有圖表
+            document.getElementById('chartsContainer').innerHTML = '';
+
+            // 為每個伺服器生成單獨的圖表
+            parsedData.forEach((serverData, index) => {
+                // 創建新的 canvas 元素
+                const canvas = document.createElement('canvas');
+                canvas.id = `chart${index + 1}`;
+                document.getElementById('chartsContainer').appendChild(canvas);
+
+                // 設置圖表數據
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: serverData.serverData.map(d => d.interval),  // X軸為時間區間
+                        datasets: [{
+                            label: `Tput (Mbits/sec) - Port ${serverData.serverPort}`,
+                            data: serverData.serverData.map(d => d.tput),  // Y軸為吞吐量數據
+                            borderColor: 'rgb(75, 192, 192)',
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,              
+                        maintainAspectRatio: true,     
+                        scales: {
+                            x: { 
+                                title: { 
+                                    display: true, 
+                                    text: 'Time (sec)',
+                                    font: { size: 14 }  
+                                }
+                            },
+                            y: { 
+                                title: { 
+                                    display: true, 
+                                    text: 'Tput (Mbits/sec)', 
+                                    font: { size: 14 }  
+                                },
+                                ticks: {
+                                    font: { size: 12 }  
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    font: {
+                                        size: 14  
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+
+</body>
+</html>
