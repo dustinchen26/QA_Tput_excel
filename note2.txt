@@ -1,3 +1,21 @@
+修改底下html，請在輸入框增加範例
+example as below:
+------------------------------------------------------------
+Server listening on UDP port 16732
+Receiving 1470 byte datagrams
+UDP buffer size:  208 KByte (default)
+------------------------------------------------------------
+[  3] local 10.205.102.25 port 16732 connected with 10.205.164.17 port 54719 (peer 2.1.0-rc)
+[ ID] Interval       Transfer     Bandwidth        Jitter   Lost/Total Datagrams
+[  3]  0.0- 1.0 sec  2.89 MBytes  24.3 Mbits/sec   0.604 ms    4/ 2171 (0.18%)
+[  3] 0.00-1.00 sec  1 datagrams received out-of-order
+[  3]  1.0- 2.0 sec  2.50 MBytes  21.0 Mbits/sec   0.550 ms    4/ 1880 (0.21%)
+[  3]  2.0- 3.0 sec  2.67 MBytes  22.4 Mbits/sec   0.608 ms    1/ 1999 (0.05%)
+[  3]  3.0- 4.0 sec  2.67 MBytes  22.4 Mbits/sec   0.593 ms    0/ 1998 (0%)
+[  3]  4.0- 5.0 sec  2.83 MBytes  23.7 Mbits/sec   0.556 ms    3/ 2123 (0.14%)
+[  3]  5.0- 6.0 sec  2.52 MBytes  21.1 Mbits/sec   0.558 ms    2/ 1888 (0.11%)
+
+html如下
 <!-- 
   Copyright © [2023] [Dustin_Chen]. All rights reserved.
   Author: Dustin_Chen
@@ -22,10 +40,9 @@
         }
         
         textarea {
-            width: 50%;
+            width: 100%;
             height: 200px;
             margin-bottom: 10px;
-            font-family: monospace; /* Use monospace font for better readability */
         }
 
         canvas {
@@ -79,21 +96,7 @@
         
     <p>● Please paste the 5-great Report ex:"20241116-224559_B_UE1_temp.log" including iperf data and push draw</p>
     
-    <textarea id="logInput" placeholder="
-Server listening on UDP port 16732
-Receiving 1470 byte datagrams
-UDP buffer size:  208 KByte (default)
-
-[  3] local 10.205.102.25 port 16732 connected with 10.205.164.17 port 54719 (peer 2.1.0-rc)
-[ ID] Interval       Transfer     Bandwidth        Jitter   Lost/Total Datagrams
-[  3]  0.0- 1.0 sec  2.89 MBytes  24.3 Mbits/sec   0.604 ms    4/ 2171 (0.18%)
-[  3] 0.00-1.00 sec  1 datagrams received out-of-order
-[  3]  1.0- 2.0 sec  2.50 MBytes  21.0 Mbits/sec   0.550 ms    4/ 1880 (0.21%)
-[  3]  2.0- 3.0 sec  2.67 MBytes  22.4 Mbits/sec   0.608 ms    1/ 1999 (0.05%)
-[  3]  3.0- 4.0 sec  2.67 MBytes  22.4 Mbits/sec   0.593 ms    0/ 1998 (0%)
-[  3]  4.0- 5.0 sec  2.83 MBytes  23.7 Mbits/sec   0.556 ms    3/ 2123 (0.14%)
-[  3]  5.0- 6.0 sec  2.52 MBytes  21.1 Mbits/sec   0.558 ms    2/ 1888 (0.11%)
-"></textarea><br>
+    <textarea id="logInput"></textarea><br>
     <button onclick="generateExcel()">Generate Excel</button>
 
     <div id="chartsContainer"></div>
